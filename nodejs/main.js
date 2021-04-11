@@ -3,43 +3,78 @@ var fs = require('fs');
 var url = require('url');
 
 var app = http.createServer(function (request, response) {
-    var _url = request.url;
-    var queryData = url.parse(_url, true).query;
-    // var queryData = new URL(_url);
-    console.log(queryData.query);
-    var title = queryData.id;
+    let _url = request.url;
+    const myURL = new URL(`http://localhost:8800${_url}`);
+    // var queryData = url.parse(_url, true).query;
+    const queryData = myURL.searchParams.get('id');
+    const pathname = myURL.pathname;
 
-    if (_url == '/') {
-        title = 'Welcome';
-    }
-    if (_url == '/favicon.ico') {
+    if (pathname === '/') {
+        if (queryData === null || queryData === undefined) {
+            fs.readdir('./data', function (error, filelist) {
+                let title = 'Welcome';
+                let description = 'Hello, Node.js';
+                let list = '<ul>';
+                let i = 0;
+                while (i < filelist.length) {
+                    list = list + `<li><a href="/?id=${filelist[i]}">${filelist[i]}</a></li>`;
+                    i = i + 1;
+                }
+                list = list + '</ul>';
+
+                let template = `
+                <!doctype html>
+                    <html>
+                    <head>
+                        <title>WEB1 - ${title}</title>
+                        <meta charset="utf-8">
+                    </head>
+                    <body>
+                        <h1><a href="/">WEB</a></h1>
+                        ${list}
+                        <h2>${title}</h2>
+                        <div>${description}</div>
+                    </body>
+                </html>
+                `;
+                response.writeHead(200);
+                response.end(template);
+            });
+        } else {
+            fs.readdir('./data', function (error, filelist) {
+                let list = '<ul>';
+                let i = 0;
+                while (i < filelist.length) {
+                    list = list + `<li><a href="/?id=${filelist[i]}">${filelist[i]}</a></li>`;
+                    i = i + 1;
+                }
+                list = list + '</ul>';
+                fs.readFile(`data/${queryData}`, 'utf8', function (err, description) {
+                    let title = queryData;
+                    let template = `
+                    <!doctype html>
+                        <html>
+                        <head>
+                            <title>WEB1 - ${title}</title>
+                            <meta charset="utf-8">
+                        </head>
+                        <body>
+                            <h1><a href="/">WEB</a></h1>
+                            ${list}
+                            <h2>${title}</h2>
+                            <div>${description}</div>
+                        </body>
+                    </html>
+                    `;
+                    response.writeHead(200);
+                    response.end(template);
+                });
+            });
+        }
+    } else {
         response.writeHead(404);
-        response.end();
-        return;
+        response.end('Not found')
     }
-    response.writeHead(200);
 
-    fs.readFile(`data/${queryData.id}`, 'utf8', function (err, description) {
-        var template = `
-        <!doctype html>
-            <html>
-            <head>
-                <title>WEB1 - ${title}</title>
-                <meta charset="utf-8">
-            </head>
-            <body>
-                <h1><a href="/">WEB</a></h1>
-                <ol>
-                    <li><a href="/?id=HTML">HTML</a></li>
-                    <li><a href="/?id=CSS">CSS</a></li>
-                    <li><a href="/?id=JavaScript">JavaScript</a></li>
-                </ol>
-                <h2>${title}</h2>
-                <div>${description}</div>
-            </body>
-        </html>
-        `;
-        response.end(template);
-    });
 });
 app.listen(8800);
