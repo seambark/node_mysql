@@ -3,33 +3,7 @@ var fs = require('fs');
 var url = require('url');
 let qs = require('querystring');
 
-function templateHTML(title, list, body, control) {
-    return `
-        <!doctype html>
-        <html>
-            <head>
-                <title>WEB1 - ${title}</title>
-                <meta charset="utf-8">
-            </head>
-            <body>
-                <h1><a href="/">WEB</a></h1>
-                ${list}
-                ${control}
-                ${body}
-            </body>
-        </html>
-    `;
-}
-function templateList(filelist) {
-    let list = '<ul>';
-    let i = 0;
-    while (i < filelist.length) {
-        list = list + `<li><a href="/?id=${filelist[i]}">${filelist[i]}</a></li>`;
-        i = i + 1;
-    }
-    list = list + '</ul>';
-    return list;
-}
+var template = require('./lib/template.js');
 
 var app = http.createServer(function (request, response) {
     let _url = request.url;
@@ -43,21 +17,21 @@ var app = http.createServer(function (request, response) {
             fs.readdir('./data', function (error, filelist) {
                 let title = 'Welcome';
                 let description = 'Hello, Node.js';
-                let list = templateList(filelist);
-                let template = templateHTML(title, list, `
+                let list = template.list(filelist);
+                let html = template.HTML(title, list, `
                     <h2>${title}</h2>
                     <div>${description}</div>`,
                     `<a href="/create">create</a>`
                 );
                 response.writeHead(200);
-                response.end(template);
+                response.end(html);
             });
         } else {
             fs.readdir('./data', function (error, filelist) {
                 fs.readFile(`data/${queryData}`, 'utf8', function (err, description) {
                     let title = queryData;
-                    let list = templateList(filelist);
-                    let template = templateHTML(title, list, `
+                    let list = template.list(filelist);
+                    let html = template.HTML(title, list, `
                         <h2>${title}</h2>
                         <div>${description}</div>`,
                         `<a href="/create">create</a>
@@ -68,15 +42,15 @@ var app = http.createServer(function (request, response) {
                          </form>`
                     );
                     response.writeHead(200);
-                    response.end(template);
+                    response.end(html);
                 });
             });
         }
     } else if (pathname === '/create') {
         fs.readdir('./data', function (error, filelist) {
             let title = 'WEB - create';
-            let list = templateList(filelist);
-            let template = templateHTML(title, list, `
+            let list = template.list(filelist);
+            let html = template.HTML(title, list, `
                 <form action="/create_process" method="post">
                     <p>
                         <input type="text" name="title" placeholder="title">
@@ -90,7 +64,7 @@ var app = http.createServer(function (request, response) {
                 </form>
             `, '');
             response.writeHead(200);
-            response.end(template);
+            response.end(html);
         });
     } else if (pathname === '/create_process') {
         let body = '';
@@ -110,10 +84,8 @@ var app = http.createServer(function (request, response) {
         fs.readdir('./data', function (error, filelist) {
             fs.readFile(`data/${queryData}`, 'utf8', function (err, description) {
                 let title = queryData;
-                let list = templateList(filelist);
-                console.log(queryData);
-                console.log(title);
-                let template = templateHTML(title, list, `
+                let list = template.list(filelist);
+                let html = template.HTML(title, list, `
                     <form action="/update_process" method="post">
                         <input type="hidden" name="id" value="${title}">
                         <p>
@@ -130,7 +102,7 @@ var app = http.createServer(function (request, response) {
                     `<a href="/create">create</a> <a href="/update?id=${title}">update</a>`
                 );
                 response.writeHead(200);
-                response.end(template);
+                response.end(html);
             });
         });
     } else if (pathname === '/update_process') {
